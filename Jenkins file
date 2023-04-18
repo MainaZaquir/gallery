@@ -1,0 +1,40 @@
+pipeline{
+    agent any 
+    tools{ nodejs 'node-12'}
+    stages {
+        stage ('Git cloning') {
+            steps{
+                git 'https://github.com/mzaquirmartin/gallery.git'
+            }
+        }
+        stage ('Building stage') {
+            steps{
+                sh 'npm install'
+            }
+        }
+        stage('test'){
+            post{
+                failure{
+                    mail bcc: '', body: 'The npm test failed. Build status failed.', cc: '', from: '', replyTo: '', subject: 'Failed test', to: 'zaquir.maina@student.moringaschool.com'
+                }
+            }
+            steps{
+               sh 'npm test'
+            }
+        }
+        stage ('Deploying Stage') {
+            steps{
+                withCredentials([usernameColonPassword(credentialsId: 'Heroku', variable: 'HEROKU_CREDENTIALS')]){
+                    sh 'git push https://${HEROKU_CREDENTIALS}@git.heroku.com/young-castle-16320.git master'
+                    
+                }
+            }
+        }
+        stage('email notification on test'){
+            steps{
+                mail bcc: '', body: 'The build and Test stages were successful and the app deploying to Render was also successful.You should expect a Slack notification once done.', cc: '', from: '', replyTo: '', subject: 'Build and Test success', to: 'zaquir.maina@student.moringaschool.com'
+            }
+        }
+        
+    }
+}        
